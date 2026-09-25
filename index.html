@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Behind Chem — Chemistry Teaching Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Mono:wght@500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<style>
+:root{
+  --paper:#EFEBE2; --ink:#1B1B18; --line:#D8D2C2;
+  --flame:#3A6EA5; --indicator:#C8622A; --panel:#FFFFFF; --ok:#3C7A54;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --paper:#14181B; --ink:#EDE8DC; --line:#31363A; --panel:#1C2124; } }
+:root[data-theme="dark"]{ --paper:#14181B; --ink:#EDE8DC; --line:#31363A; --panel:#1C2124; }
+*{box-sizing:border-box;}
+html{scroll-padding-top:env(safe-area-inset-top,0px);}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:'Inter',sans-serif;line-height:1.5;}
+h1,h2,h3{font-family:'Fraunces',serif;font-weight:600;margin:0 0 .3em;}
+.mono{font-family:'IBM Plex Mono',monospace;}
+a{color:inherit;}
+.wrap{max-width:920px;margin:0 auto;padding:0 20px;}
+header.top{position:sticky;top:0;top:env(safe-area-inset-top,0px);background:var(--paper);border-bottom:1px solid var(--line);z-index:10;}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;max-width:920px;margin:0 auto;flex-wrap:wrap;gap:10px;}
+.brand{display:flex;align-items:center;gap:10px;font-family:'Fraunces',serif;font-weight:600;font-size:20px;}
+.brand .mark{width:28px;height:28px;border-radius:50%;background:conic-gradient(var(--flame),var(--indicator),var(--flame));display:inline-block;}
+nav.tabs{display:flex;gap:4px;flex-wrap:wrap;}
+nav.tabs button{background:none;border:1px solid transparent;color:var(--ink);font:inherit;font-size:14px;padding:8px 12px;border-radius:6px;cursor:pointer;opacity:.65;}
+nav.tabs button.active{opacity:1;border-color:var(--line);background:var(--panel);}
+.acct{font-size:13px;opacity:.85;display:flex;align-items:center;gap:8px;}
+main{padding:40px 0 80px;}
+section{display:none;}
+section.active{display:block;}
+.hero{padding:20px 0 44px;border-bottom:1px solid var(--line);margin-bottom:36px;}
+.hero h1{font-size:clamp(32px,5vw,46px);max-width:12ch;}
+.hero p{max-width:52ch;opacity:.8;font-size:17px;}
+.badge{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:12px;border:1px solid var(--line);border-radius:20px;padding:3px 10px;margin-bottom:14px;opacity:.75;}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px;}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:18px;}
+.card h3{font-size:17px;}
+.price{font-family:'IBM Plex Mono',monospace;color:var(--indicator);font-size:15px;}
+.btn{font:inherit;font-size:14px;background:var(--flame);color:#fff;border:none;border-radius:6px;padding:9px 16px;cursor:pointer;}
+.btn.secondary{background:none;border:1px solid var(--line);color:var(--ink);}
+.btn.small{padding:6px 10px;font-size:13px;}
+.btn:disabled{opacity:.5;cursor:default;}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+form.inline{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 24px;}
+input,textarea,select{font:inherit;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:9px 10px;}
+input,select{flex:1;min-width:140px;}
+textarea{width:100%;min-height:70px;}
+table{width:100%;border-collapse:collapse;font-size:14px;}
+th,td{text-align:left;padding:9px 6px;border-bottom:1px solid var(--line);}
+th{font-family:'IBM Plex Mono',monospace;font-weight:500;font-size:12px;opacity:.65;}
+.empty{opacity:.6;font-style:italic;padding:20px 0;}
+.section-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px;flex-wrap:wrap;gap:8px;}
+.section-head h2{font-size:26px;}
+.subtle{opacity:.65;font-size:14px;}
+.codebox{font-family:'IBM Plex Mono',monospace;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:4px 10px;display:inline-block;}
+footer{border-top:1px solid var(--line);padding:24px 0;text-align:center;font-size:13px;opacity:.55;}
+.tag{font-family:'IBM Plex Mono',monospace;font-size:11px;border-radius:12px;padding:2px 8px;border:1px solid var(--line);}
+.tag.free{color:var(--ok);border-color:var(--ok);}
+.tag.paid{color:var(--indicator);border-color:var(--indicator);}
+.paybox{background:var(--paper);border:1px dashed var(--line);border-radius:6px;padding:10px;margin-top:8px;font-size:13px;}
+.paybox a{color:var(--flame);font-weight:600;}
+.pending{font-size:12px;opacity:.7;}
+.authbox{max-width:380px;margin:0 auto 30px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:22px;}
+.authbox form{flex-direction:column;align-items:stretch;}
+.switcher{font-size:13px;text-align:center;margin-top:10px;opacity:.75;}
+.switcher a{text-decoration:underline;cursor:pointer;}
+.warn{font-size:13px;color:var(--indicator);}
+@media(max-width:640px){.topbar{flex-direction:column;align-items:stretch;gap:10px;} nav.tabs{justify-content:center;}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="topbar">
+    <div class="brand"><span class="mark"></span>Behind Chem</div>
+    <nav class="tabs" id="tabs">
+      <button data-tab="home" class="active">Home</button>
+      <button data-tab="notes">Notes</button>
+      <button data-tab="classes">Live classes</button>
+      <button data-tab="classroom">Classroom</button>
+      <button data-tab="account">Account</button>
+    </nav>
+    <div class="acct" id="acctBox"></div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section id="home" class="active">
+    <div class="hero">
+      <div class="badge mono">A CHEMISTRY TEACHING STUDIO</div>
+      <h1>Sell your notes. Run your classroom. All in one bench.</h1>
+      <p>Publish PDF notes for sale, run paid or free live batches, and manage the students in your classroom — synced for everyone, on every device.</p>
+      <div class="row" style="margin-top:18px;">
+        <button class="btn" onclick="go('notes')">Browse notes</button>
+        <button class="btn secondary" onclick="go('classroom')">Open classroom</button>
+      </div>
+    </div>
+    <div class="grid">
+      <div class="card"><h3>Notes store</h3><p class="subtle">Upload PDF note sets with a price. Students pay to download.</p></div>
+      <div class="card"><h3>Live classes</h3><p class="subtle">Run free or paid batches with scheduled sessions and meeting links.</p></div>
+      <div class="card"><h3>Classroom roster</h3><p class="subtle">Approve payments and manage who's enrolled.</p></div>
+    </div>
+  </section>
+
+  <section id="notes">
+    <div class="section-head"><h2>Notes store</h2><span class="subtle" id="notesHint"></span></div>
+    <form class="inline" id="noteForm" style="display:none">
+      <input id="noteTitle" placeholder="Title, e.g. Chemical Bonding — Class 11" required>
+      <input id="noteTopic" placeholder="Topic / chapter">
+      <input id="notePrice" placeholder="Price ₹ (0 = free)" type="number" min="0" style="max-width:160px" required>
+      <textarea id="noteDesc" placeholder="What's covered in this note set"></textarea>
+      <input id="notePdf" type="file" accept="application/pdf" required>
+      <button class="btn" type="submit" id="noteSubmitBtn">Publish note</button>
+    </form>
+    <div class="grid" id="notesGrid"></div>
+  </section>
+
+  <section id="classes">
+    <div class="section-head"><h2>Live classes</h2><span class="subtle" id="classesHint"></span></div>
+    <form class="inline" id="classForm" style="display:none">
+      <input id="classTitle" placeholder="Class title, e.g. Redox reactions" required>
+      <input id="classDate" type="date" required>
+      <input id="classTime" type="time" required>
+      <input id="classLink" placeholder="Meeting link">
+      <button class="btn" type="submit">Schedule class</button>
+    </form>
+    <p class="subtle" id="joinNote"></p>
+    <table id="classesTable"><thead><tr><th>Class</th><th>When</th><th>Link</th><th></th></tr></thead><tbody></tbody></table>
+    <p class="empty" id="classesEmpty">No classes scheduled yet.</p>
+  </section>
+
+  <section id="classroom">
+    <div class="section-head"><h2>Classroom <span class="tag" id="batchTag"></span></h2><span class="subtle">Code: <span class="codebox" id="classCode"></span></span></div>
+    <div id="teacherRoster" style="display:none">
+      <form class="inline" id="batchForm">
+        <select id="batchType"><option value="free">Free batch</option><option value="paid">Paid batch</option></select>
+        <input id="batchPrice" type="number" min="0" placeholder="Price ₹ if paid" style="max-width:160px">
+        <button class="btn secondary" type="submit">Save batch settings</button>
+      </form>
+      <table><thead><tr><th>Student</th><th>Status</th><th></th></tr></thead><tbody id="rosterBody"></tbody></table>
+      <p class="empty" id="rosterEmpty">No students enrolled yet.</p>
+    </div>
+    <div id="studentJoin" style="display:none">
+      <p id="joinInfo"></p>
+      <div id="joinAction"></div>
+    </div>
+  </section>
+
+  <section id="account">
+    <div id="loggedOutBox">
+      <div class="authbox">
+        <h2 id="authTitle" style="font-size:20px">Log in</h2>
+        <form id="loginForm" class="inline">
+          <input id="loginEmail" type="email" placeholder="Email" required>
+          <input id="loginPass" type="password" placeholder="Password" required>
+          <button class="btn" type="submit">Log in</button>
+        </form>
+        <form id="signupForm" class="inline" style="display:none">
+          <input id="suName" placeholder="Full name" required>
+          <input id="suEmail" type="email" placeholder="Email" required>
+          <input id="suPass" type="password" placeholder="Password (min 6 chars)" minlength="6" required>
+          <select id="suRole"><option value="student">Student</option><option value="teacher">Teacher</option></select>
+          <input id="suCode" placeholder="Teacher access code" style="display:none">
+          <button class="btn" type="submit">Sign up</button>
+        </form>
+        <p id="authError" class="warn"></p>
+        <p class="switcher"><a id="authSwitch" onclick="toggleAuth()">New here? Sign up instead</a></p>
+      </div>
+    </div>
+    <div id="loggedInBox" style="display:none">
+      <div class="section-head"><h2>Account</h2></div>
+      <p id="whoAmI" class="subtle"></p>
+      <div id="teacherSettings" style="display:none">
+        <h3 style="font-size:17px;margin-top:24px">Payments</h3>
+        <p class="subtle">Set the UPI ID students pay you at (PhonePe, Google Pay and any UPI app all work with this).</p>
+        <form class="inline" id="upiForm">
+          <input id="upiIdInput" placeholder="yourname@upi">
+          <button class="btn secondary" type="submit">Save UPI ID</button>
+        </form>
+        <h3 style="font-size:17px;margin-top:24px">Pending approvals</h3>
+        <table><thead><tr><th>Who</th><th>For</th><th>Amount</th><th></th></tr></thead><tbody id="pendingBody"></tbody></table>
+        <p class="empty" id="pendingEmpty">Nothing waiting on approval.</p>
+      </div>
+      <button class="btn secondary" style="margin-top:20px" onclick="logout()">Log out</button>
+    </div>
+  </section>
+
+</main>
+<footer>Behind Chem — accounts, notes and payments are stored in your Firebase project, shared across every device.</footer>
+
+<script>
+const CLASS_CODE='CHEM101';
+const TEACHER_CODE='TEACH2026';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAAnpCUU3Got89HeRSDEmE52VrJ_haHorQ",
+  authDomain: "behind-chem.firebaseapp.com",
+  projectId: "behind-chem",
+  storageBucket: "behind-chem.firebasestorage.app",
+  messagingSenderId: "485701454637",
+  appId: "1:485701454637:web:662f0637b512e967cae1a4",
+  measurementId: "G-ZZ9KVMCFF9"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+const CLOUDINARY_CLOUD = "fdidiaw8";
+const CLOUDINARY_PRESET = "BEHIND_CHEM";
+async function uploadPdf(file){
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('upload_preset', CLOUDINARY_PRESET);
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/raw/upload`, { method:'POST', body: fd });
+  if(!res.ok) throw new Error('Upload failed');
+  const data = await res.json();
+  return data.secure_url;
+}
+
+let session = null; // {uid,name,email,role}
+let cache = { notes:[], classes:[], roster:[], purchases:[], pending:[], settings:{upiId:'',batchType:'free',batchPrice:0} };
+
+function esc(s){ return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function go(tab){
+  document.querySelectorAll('section').forEach(s=>s.classList.remove('active'));
+  document.getElementById(tab).classList.add('active');
+  document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
+}
+document.getElementById('tabs').addEventListener('click',e=>{ if(e.target.tagName==='BUTTON') go(e.target.dataset.tab); });
+document.getElementById('classCode').textContent = CLASS_CODE;
+
+function role(){ return session ? session.role : null; }
+function isTeacher(){ return role()==='teacher'; }
+
+function upiLink(amount, note){ return `upi://pay?pa=${encodeURIComponent(cache.settings.upiId)}&pn=${encodeURIComponent('Behind Chem')}&am=${amount}&cu=INR&tn=${encodeURIComponent(note)}`; }
+function payBox(amount, note){
+  if(!cache.settings.upiId) return `<p class="warn">Payments aren't set up yet — ask your teacher to add a UPI ID.</p>`;
+  return `<div class="paybox">Pay ₹${amount} via PhonePe / Google Pay / any UPI app<br>
+    <a href="${upiLink(amount,note)}">Tap to pay ${esc(cache.settings.upiId)}</a><br>
+    <span class="subtle">Or pay manually to ${esc(cache.settings.upiId)}, amount ₹${amount}</span></div>`;
+}
+
+// ---- Auth state ----
+auth.onAuthStateChanged(async user=>{
+  if(user){
+    const doc = await db.collection('users').doc(user.uid).get();
+    const d = doc.data() || {name:user.email, role:'student'};
+    session = {uid:user.uid, email:user.email, name:d.name, role:d.role};
+  } else session = null;
+  render();
+});
+
+// ---- Realtime listeners ----
+db.collection('notes').orderBy('createdAt','desc').onSnapshot(snap=>{ cache.notes = snap.docs.map(d=>({id:d.id,...d.data()})); render(); });
+db.collection('classes').onSnapshot(snap=>{ cache.classes = snap.docs.map(d=>({id:d.id,...d.data()})); render(); });
+db.collection('roster').onSnapshot(snap=>{ cache.roster = snap.docs.map(d=>({id:d.id,...d.data()})); render(); });
+db.collection('purchases').onSnapshot(snap=>{ cache.purchases = snap.docs.map(d=>d.data()); render(); });
+db.collection('pendingRequests').onSnapshot(snap=>{ cache.pending = snap.docs.map(d=>({id:d.id,...d.data()})); render(); });
+db.collection('settings').doc('main').onSnapshot(doc=>{ if(doc.exists) cache.settings = doc.data(); render(); });
+
+function render(){
+  const loggedIn = !!session;
+  document.getElementById('acctBox').innerHTML = loggedIn
+    ? `Hi, ${esc(session.name)} <span class="tag">${session.role}</span> <button class="btn secondary small" onclick="logout()">Log out</button>`
+    : `<button class="btn small" onclick="go('account')">Log in / Sign up</button>`;
+  document.getElementById('loggedOutBox').style.display = loggedIn ? 'none' : 'block';
+  document.getElementById('loggedInBox').style.display = loggedIn ? 'block' : 'none';
+  if(loggedIn){
+    document.getElementById('whoAmI').textContent = `${session.name} — ${session.email} — ${session.role}`;
+    document.getElementById('teacherSettings').style.display = isTeacher() ? 'block' : 'none';
+    document.getElementById('upiIdInput').value = cache.settings.upiId || '';
+  }
+  const teacher = isTeacher();
+  document.getElementById('noteForm').style.display = teacher ? 'flex' : 'none';
+  document.getElementById('notesHint').textContent = teacher ? 'Publish PDF note sets for students to buy.' : 'Buy and download notes your teacher has published.';
+  document.getElementById('classForm').style.display = teacher ? 'flex' : 'none';
+  document.getElementById('classesHint').textContent = teacher ? 'Schedule sessions for your classroom.' : "Meeting links unlock once you're enrolled.";
+  document.getElementById('teacherRoster').style.display = teacher ? 'block' : 'none';
+  document.getElementById('studentJoin').style.display = (loggedIn && !teacher) ? 'block' : 'none';
+  document.getElementById('batchTag').textContent = cache.settings.batchType==='paid' ? `Paid · ₹${cache.settings.batchPrice}` : 'Free';
+  document.getElementById('batchTag').className = 'tag ' + (cache.settings.batchType||'free');
+  document.getElementById('batchType').value = cache.settings.batchType||'free';
+  document.getElementById('batchPrice').value = cache.settings.batchPrice || '';
+
+  const grid = document.getElementById('notesGrid');
+  grid.innerHTML = '';
+  if(cache.notes.length===0) grid.innerHTML = '<p class="empty">No notes published yet.</p>';
+  cache.notes.forEach(n=>{
+    const owns = loggedIn && (n.price==0 || cache.purchases.some(p=>p.studentId===session.uid && p.noteId===n.id));
+    const pendingHere = loggedIn && cache.pending.some(r=>r.type==='note' && r.noteId===n.id && r.studentId===session.uid && r.status==='pending');
+    let action;
+    if(teacher) action = `<button class="btn secondary small" onclick="removeNote('${n.id}')">Delete</button>`;
+    else if(!loggedIn) action = `<span class="subtle">Log in to buy</span>`;
+    else if(owns) action = `<a class="btn small" href="${n.pdfURL||'#'}" download="${esc(n.pdfName||'note.pdf')}" target="_blank">Download PDF</a>`;
+    else if(pendingHere) action = `<span class="pending">Payment pending approval</span>`;
+    else if(n.price==0) action = `<button class="btn small" onclick="claimFree('${n.id}')">Get free</button>`;
+    else action = `<button class="btn small" onclick="buyNote('${n.id}')">Buy ₹${n.price}</button>`;
+    const card = document.createElement('div'); card.className='card';
+    card.innerHTML = `<h3>${esc(n.title)}</h3><p class="subtle">${esc(n.topic||'')}</p><p>${esc(n.desc||'')}</p>
+      <div class="row" style="justify-content:space-between;margin-top:10px;"><span class="price">${n.price==0?'Free':'₹'+n.price}</span>${action}</div>
+      ${(!teacher && loggedIn && !owns && !pendingHere && n.price>0) ? payBox(n.price, n.title) : ''}`;
+    grid.appendChild(card);
+  });
+
+  const tbody = document.querySelector('#classesTable tbody'); tbody.innerHTML='';
+  document.getElementById('classesEmpty').style.display = cache.classes.length ? 'none':'block';
+  const enrolled = loggedIn && (teacher || cache.roster.some(r=>r.id===session.uid && r.status==='approved'));
+  document.getElementById('joinNote').textContent = (!teacher && loggedIn && !enrolled) ? 'Join the classroom below to unlock meeting links.' : '';
+  cache.classes.slice().sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time)).forEach(c=>{
+    const tr=document.createElement('tr');
+    const linkCell = (teacher || enrolled) ? (c.link?`<a href="${esc(c.link)}" target="_blank">Join link</a>`:'—') : '<span class="subtle">Locked</span>';
+    tr.innerHTML = `<td>${esc(c.title)}</td><td>${c.date} · ${c.time}</td><td>${linkCell}</td>
+      <td>${teacher?`<button class="btn secondary small" onclick="removeClass('${c.id}')">Remove</button>`:''}</td>`;
+    tbody.appendChild(tr);
+  });
+
+  const rBody = document.getElementById('rosterBody'); rBody.innerHTML='';
+  document.getElementById('rosterEmpty').style.display = cache.roster.length ? 'none':'block';
+  cache.roster.forEach(r=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML = `<td>${esc(r.name)}</td><td>${r.status}</td><td><button class="btn secondary small" onclick="removeStudent('${r.id}')">Remove</button></td>`;
+    rBody.appendChild(tr);
+  });
+  if(!teacher && loggedIn){
+    const already = cache.roster.find(r=>r.id===session.uid);
+    const pend = cache.pending.find(r=>r.type==='classroom' && r.studentId===session.uid && r.status==='pending');
+    const info = document.getElementById('joinInfo'); const act = document.getElementById('joinAction');
+    if(already && already.status==='approved'){ info.textContent = "You're enrolled in this classroom."; act.innerHTML=''; }
+    else if(pend){ info.textContent = 'Your payment is pending teacher approval.'; act.innerHTML=''; }
+    else if((cache.settings.batchType||'free')==='free'){ info.textContent='This is a free batch.'; act.innerHTML = `<button class="btn" onclick="joinFree()">Join classroom</button>`; }
+    else { info.textContent=`This is a paid batch — ₹${cache.settings.batchPrice} to join.`; act.innerHTML = payBox(cache.settings.batchPrice,'Classroom join') + `<button class="btn" style="margin-top:10px" onclick="requestJoin()">I've paid — request join</button>`; }
+  }
+
+  const pBody = document.getElementById('pendingBody'); pBody.innerHTML='';
+  const pend = cache.pending.filter(r=>r.status==='pending');
+  document.getElementById('pendingEmpty').style.display = pend.length ? 'none':'block';
+  pend.forEach(r=>{
+    const label = r.type==='note' ? ('Note: '+ (cache.notes.find(n=>n.id===r.noteId)?.title || 'deleted note')) : 'Classroom join';
+    const tr=document.createElement('tr');
+    tr.innerHTML = `<td>${esc(r.studentName)}<br><span class="subtle">${esc(r.studentEmail||'')}</span></td><td>${label}</td><td>₹${r.amount}</td>
+      <td class="row"><button class="btn small" onclick="approveReq('${r.id}')">Approve</button><button class="btn secondary small" onclick="rejectReq('${r.id}')">Reject</button></td>`;
+    pBody.appendChild(tr);
+  });
+}
+
+// ---- Auth actions ----
+let authMode='login';
+function toggleAuth(){
+  authMode = authMode==='login' ? 'signup' : 'login';
+  document.getElementById('loginForm').style.display = authMode==='login' ? 'flex':'none';
+  document.getElementById('signupForm').style.display = authMode==='signup' ? 'flex':'none';
+  document.getElementById('authTitle').textContent = authMode==='login' ? 'Log in' : 'Sign up';
+  document.getElementById('authSwitch').textContent = authMode==='login' ? 'New here? Sign up instead' : 'Already have an account? Log in';
+  document.getElementById('authError').textContent='';
+}
+document.getElementById('suRole').addEventListener('change', e=>{ document.getElementById('suCode').style.display = e.target.value==='teacher' ? 'block':'none'; });
+document.getElementById('loginForm').addEventListener('submit', async e=>{
+  e.preventDefault();
+  const err = document.getElementById('authError'); err.textContent='';
+  try{
+    await auth.signInWithEmailAndPassword(document.getElementById('loginEmail').value.trim(), document.getElementById('loginPass').value);
+    go('account');
+  }catch(ex){ err.textContent = 'Login failed: ' + ex.message; }
+});
+document.getElementById('signupForm').addEventListener('submit', async e=>{
+  e.preventDefault();
+  const name = document.getElementById('suName').value.trim();
+  const email = document.getElementById('suEmail').value.trim();
+  const pass = document.getElementById('suPass').value;
+  const wantRole = document.getElementById('suRole').value;
+  const code = document.getElementById('suCode').value;
+  const err = document.getElementById('authError'); err.textContent='';
+  if(wantRole==='teacher' && code !== TEACHER_CODE){ err.textContent='That teacher access code is incorrect.'; return; }
+  try{
+    const cred = await auth.createUserWithEmailAndPassword(email, pass);
+    await db.collection('users').doc(cred.user.uid).set({name, email, role:wantRole});
+    go('account');
+  }catch(ex){ err.textContent = 'Sign up failed: ' + ex.message; }
+});
+function logout(){ auth.signOut(); go('home'); }
+
+// ---- Notes ----
+document.getElementById('noteForm').addEventListener('submit', async e=>{
+  e.preventDefault();
+  const btn = document.getElementById('noteSubmitBtn'); btn.disabled=true; btn.textContent='Uploading…';
+  try{
+    const file = document.getElementById('notePdf').files[0];
+    const ref = db.collection('notes').doc();
+    let pdfURL=null, pdfName=null;
+    if(file){
+      pdfURL = await uploadPdf(file);
+      pdfName = file.name;
+    }
+    await ref.set({
+      title: document.getElementById('noteTitle').value,
+      topic: document.getElementById('noteTopic').value,
+      price: Number(document.getElementById('notePrice').value)||0,
+      desc: document.getElementById('noteDesc').value,
+      pdfURL, pdfName, teacherId: session.uid,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    document.getElementById('noteForm').reset();
+  }catch(ex){ alert('Could not publish note: '+ex.message); }
+  btn.disabled=false; btn.textContent='Publish note';
+});
+async function removeNote(id){
+  // Deletes the note listing. The PDF file itself stays on Cloudinary (unsigned
+  // uploads can't be deleted from the browser) — remove it manually from the
+  // Cloudinary Media Library if needed.
+  await db.collection('notes').doc(id).delete();
+}
+function claimFree(id){ db.collection('purchases').add({studentId:session.uid, noteId:id}); }
+function buyNote(id){
+  const n = cache.notes.find(x=>x.id===id);
+  db.collection('pendingRequests').add({type:'note', noteId:id, studentId:session.uid, studentName:session.name, studentEmail:session.email, amount:n.price, status:'pending'});
+}
+
+// ---- Classes ----
+document.getElementById('classForm').addEventListener('submit', e=>{
+  e.preventDefault();
+  db.collection('classes').add({title:document.getElementById('classTitle').value, date:document.getElementById('classDate').value, time:document.getElementById('classTime').value, link:document.getElementById('classLink').value});
+  e.target.reset();
+});
+function removeClass(id){ db.collection('classes').doc(id).delete(); }
+
+// ---- Classroom ----
+document.getElementById('batchForm').addEventListener('submit', e=>{
+  e.preventDefault();
+  db.collection('settings').doc('main').set({...cache.settings, batchType:document.getElementById('batchType').value, batchPrice:Number(document.getElementById('batchPrice').value)||0}, {merge:true});
+});
+function removeStudent(id){ db.collection('roster').doc(id).delete(); }
+function joinFree(){ db.collection('roster').doc(session.uid).set({name:session.name, status:'approved'}); }
+function requestJoin(){ db.collection('pendingRequests').add({type:'classroom', studentId:session.uid, studentName:session.name, studentEmail:session.email, amount:cache.settings.batchPrice, status:'pending'}); }
+function approveReq(id){
+  const r = cache.pending.find(x=>x.id===id);
+  if(!r) return;
+  db.collection('pendingRequests').doc(id).update({status:'approved'});
+  if(r.type==='note') db.collection('purchases').add({studentId:r.studentId, noteId:r.noteId});
+  else db.collection('roster').doc(r.studentId).set({name:r.studentName, status:'approved'});
+}
+function rejectReq(id){ db.collection('pendingRequests').doc(id).update({status:'rejected'}); }
+
+// ---- Settings ----
+document.getElementById('upiForm').addEventListener('submit', e=>{
+  e.preventDefault();
+  db.collection('settings').doc('main').set({...cache.settings, upiId:document.getElementById('upiIdInput').value.trim()}, {merge:true});
+});
+</script>
+</body>
+</html>
